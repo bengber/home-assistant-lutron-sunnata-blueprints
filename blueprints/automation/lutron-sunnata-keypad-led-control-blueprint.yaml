@@ -168,6 +168,21 @@ triggers:
           - arming
           - pending
         {%- endif %}
+      flash_delay_fast_ms: 250
+      flash_delay_slow_ms: 750
+      flash_delay_ms: >-
+        {% if new_device_state == 'pending' %}
+          {{ flash_delay_fast_ms }}
+        {% elif new_device_state == 'arming' %}
+          {% set arming_mode = trigger.to_state.attributes.get('arming_mode') %}
+          {% if arming_mode == 'away' %}
+            {{ flash_delay_fast_ms }}
+          {% else %}
+            {{ flash_delay_slow_ms }}
+          {% endif %}
+        {% else %}
+          {{ flash_delay_slow_ms }}
+        {% endif %}
 conditions:
   - condition: template
     value_template: >-
@@ -197,7 +212,7 @@ actions:
                 entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
               data: {}
             - delay:
-                milliseconds: 500
+                milliseconds: "{{ flash_delay_ms | int }}"
       # Flash loop has exited — set the LED to the correct final state
       - if:
           - condition: template
