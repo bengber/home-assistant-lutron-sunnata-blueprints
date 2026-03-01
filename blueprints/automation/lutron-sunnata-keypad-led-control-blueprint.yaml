@@ -39,7 +39,8 @@ blueprint:
 
       - **Alarm Control Panels** -- LED will be on when the alarm is
         armed (one of ''armed_away'', ''armed_home'', ''armed_night'',
-        ''armed_vacation'', or ''armed_custom_bypass''
+        ''armed_vacation'', or ''armed_custom_bypass''). LED will
+        **flash** when the alarm is ''arming'' or ''pending''.
 
 
     To get LED behavior analogous to the Lutron Designer''s
@@ -162,6 +163,11 @@ triggers:
           - armed_vacation
           - armed_custom_bypass
         {%- endif %}
+      target_flash_states: |-
+        {% if entity_type == 'alarm_control_panel' -%}
+          - arming
+          - pending
+        {%- endif %}
 conditions:
   - condition: template
     value_template: >-
@@ -177,13 +183,44 @@ actions:
         target:
           entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
         data: {}
+    elif:
+      - condition: template
+        value_template: "{{ new_device_state in target_flash_states }}"
+      - repeat:
+          while:
+            - condition: template
+              value_template: "{{ states(triggered_entity) in target_flash_states }}"
+          sequence:
+            - action: switch.toggle
+              metadata: {}
+              target:
+                entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+              data: {}
+            - delay:
+                milliseconds: 500
+      # Flash loop has exited — set the LED to the correct final state
+      - if:
+          - condition: template
+            value_template: "{{ states(triggered_entity) in target_on_states }}"
+        then:
+          - action: switch.turn_on
+            metadata: {}
+            target:
+              entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+            data: {}
+        else:
+          - action: switch.turn_off
+            metadata: {}
+            target:
+              entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+            data: {}
     else:
       - action: switch.turn_off
         metadata: {}
         target:
           entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
         data: {}
-mode: single
+mode: parallel
 variables:
   linked_keypad_device: !input synced_keypad
   keypad_leds: >-
