@@ -144,6 +144,47 @@ blueprint:
                 - alarm_control_panel
                 - media_player
 
+    advanced_settings_group:
+      name: Advanced Settings
+      icon: mdi:tune
+      collapsed: true
+      input:
+        enable_interim_state_flashing:
+          name: Flash LED during interim states
+          description: >-
+            When enabled, the LED will flash during transitional states
+            (e.g. alarm arming/pending, cover opening/closing). When
+            disabled, the LED will simply turn off during these states.
+          default: true
+          selector:
+            boolean:
+        fast_flash_interval_ms:
+          name: Fast flash interval
+          description: >-
+            Duration of each on/off half-cycle when flashing quickly
+            (alarm pending, alarm arming away).
+          default: 250
+          selector:
+            number:
+              min: 250
+              max: 1000
+              step: 50
+              unit_of_measurement: ms
+              mode: slider
+        slow_flash_interval_ms:
+          name: Slow flash interval
+          description: >-
+            Duration of each on/off half-cycle when flashing slowly
+            (alarm arming home, cover opening/closing).
+          default: 750
+          selector:
+            number:
+              min: 250
+              max: 2000
+              step: 50
+              unit_of_measurement: ms
+              mode: slider
+
 triggers:
   - trigger: state
     entity_id:
@@ -156,6 +197,9 @@ triggers:
       new_device_state: "{{ trigger.to_state.state }}"
       triggered_entity: "{{ trigger.entity_id }}"
       entity_type: "{{ triggered_entity.split('.')[0] }}"
+      flash_delay_fast_ms: !input fast_flash_interval_ms
+      flash_delay_slow_ms: !input slow_flash_interval_ms
+      enable_flashing: !input enable_interim_state_flashing
       target_on_states: |-
         {% if entity_type == 'binary_sensor' or entity_type == 'switch' or entity_type == 'light' -%}
           - on
@@ -171,15 +215,13 @@ triggers:
           - armed_custom_bypass
         {%- endif %}
       target_flash_states: |-
-        {% if entity_type == 'alarm_control_panel' -%}
+        {% if enable_flashing and entity_type == 'alarm_control_panel' -%}
           - arming
           - pending
-        {%- elif entity_type == 'cover' -%}
+        {%- elif enable_flashing and entity_type == 'cover' -%}
           - opening
           - closing
         {%- endif %}
-      flash_delay_fast_ms: 250
-      flash_delay_slow_ms: 750
       flash_delay_ms: >-
         {% if new_device_state == 'pending' %}
           {{ flash_delay_fast_ms }}
