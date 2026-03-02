@@ -189,47 +189,49 @@ conditions:
       {# if any of the leds are unavailable, just to be safe, don't run #} {{
       keypad_leds | select('is_state', 'unavailable') | list | length == 0 }}
 actions:
-  - if:
-      - condition: template
-        value_template: "{{ new_device_state in target_on_states }}"
-    then:
-      - action: switch.turn_on
-        metadata: {}
-        target:
-          entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
-        data: {}
-    elif:
-      - condition: template
-        value_template: "{{ new_device_state in target_flash_states }}"
-      - repeat:
-          while:
-            - condition: template
-              value_template: "{{ states(triggered_entity) in target_flash_states }}"
-          sequence:
-            - action: switch.toggle
-              metadata: {}
-              target:
-                entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
-              data: {}
-            - delay:
-                milliseconds: "{{ flash_delay_ms | int }}"
-      # Flash loop has exited — set the LED to the correct final state
-      - if:
+  - choose:
+      - conditions:
           - condition: template
-            value_template: "{{ states(triggered_entity) in target_on_states }}"
-        then:
+            value_template: "{{ new_device_state in target_on_states }}"
+        sequence:
           - action: switch.turn_on
             metadata: {}
             target:
               entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
             data: {}
-        else:
-          - action: switch.turn_off
-            metadata: {}
-            target:
-              entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
-            data: {}
-    else:
+      - conditions:
+          - condition: template
+            value_template: "{{ new_device_state in target_flash_states }}"
+        sequence:
+          - repeat:
+              while:
+                - condition: template
+                  value_template: "{{ states(triggered_entity) in target_flash_states }}"
+              sequence:
+                - action: switch.toggle
+                  metadata: {}
+                  target:
+                    entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+                  data: {}
+                - delay:
+                    milliseconds: "{{ flash_delay_ms | int }}"
+          # Flash loop has exited — set the LED to the correct final state
+          - if:
+              - condition: template
+                value_template: "{{ states(triggered_entity) in target_on_states }}"
+            then:
+              - action: switch.turn_on
+                metadata: {}
+                target:
+                  entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+                data: {}
+            else:
+              - action: switch.turn_off
+                metadata: {}
+                target:
+                  entity_id: "{{ keypad_leds[linked_leds.index(triggered_entity)] }}"
+                data: {}
+    default:
       - action: switch.turn_off
         metadata: {}
         target:
