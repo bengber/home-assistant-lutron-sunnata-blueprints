@@ -32,6 +32,8 @@ blueprint:
 
       - **Switches** -- LED will be on when the switch is ''on''
 
+      - **Binary Sensors** -- LED will be on when the sensor is ''on''
+
       - **Covers (Shades)** -- LED will be on when the cover is ''open''
 
       - **Media Players** -- LED will be on when the media player is
@@ -87,6 +89,7 @@ blueprint:
         entity:
           filter:
             - domain:
+                - binary_sensor
                 - light
                 - switch
                 - cover
@@ -101,6 +104,7 @@ blueprint:
         entity:
           filter:
             - domain:
+                - binary_sensor
                 - light
                 - switch
                 - cover
@@ -116,6 +120,7 @@ blueprint:
         entity:
           filter:
             - domain:
+                - binary_sensor
                 - light
                 - switch
                 - cover
@@ -131,6 +136,7 @@ blueprint:
         entity:
           filter:
             - domain:
+                - binary_sensor
                 - light
                 - switch
                 - cover
@@ -150,7 +156,7 @@ triggers:
       triggered_entity: "{{ trigger.entity_id }}"
       entity_type: "{{ triggered_entity.split('.')[0] }}"
       target_on_states: |-
-        {% if entity_type == 'switch' or entity_type == 'light' -%}
+        {% if entity_type == 'binary_sensor' or entity_type == 'switch' or entity_type == 'light' -%}
           - on
         {%- elif entity_type == 'media_player' -%}
           - playing
