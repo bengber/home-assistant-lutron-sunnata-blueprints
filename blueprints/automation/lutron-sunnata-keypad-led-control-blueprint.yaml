@@ -34,7 +34,8 @@ blueprint:
 
       - **Binary Sensors** -- LED will be on when the sensor is ''on''
 
-      - **Covers (Shades)** -- LED will be on when the cover is ''open''
+      - **Covers (Shades)** -- LED will be on when the cover is ''open''.
+        LED will **flash** when the cover is ''opening'' or ''closing''.
 
       - **Media Players** -- LED will be on when the media player is
         ''playing''
@@ -173,6 +174,9 @@ triggers:
         {% if entity_type == 'alarm_control_panel' -%}
           - arming
           - pending
+        {%- elif entity_type == 'cover' -%}
+          - opening
+          - closing
         {%- endif %}
       flash_delay_fast_ms: 250
       flash_delay_slow_ms: 750
